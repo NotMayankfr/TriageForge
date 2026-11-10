@@ -39,7 +39,7 @@ jobs:
         run: |
           triageforge diagnose --url http://localhost:80 --format terminal
 
-      - name: Test Fault Injection: 02_gunicorn_down
+      - name: "Test Fault Injection: 02_gunicorn_down"
         run: |
           chmod +x faults/*/*.sh
           echo "Injecting fault 02_gunicorn_down..."
@@ -58,7 +58,7 @@ jobs:
           assert top == '02_gunicorn_down', f'Expected 02_gunicorn_down, got {top}'
           "
 
-      - name: Test Fault Recovery: 02_gunicorn_down
+      - name: "Test Fault Recovery: 02_gunicorn_down"
         run: |
           echo "Recovering fault..."
           bash faults/02_gunicorn_down/fix.sh

@@ -3,11 +3,17 @@
 > **A deterministic cloud failure triage lab, automated diagnosis engine, and support case simulation platform.**  
 > Built for Cloud Support Engineers (CSE) and Site Reliability Engineers (SRE).
 
-[![CI](https://github.com/mayank/TriageForge/actions/workflows/ci.yml/badge.svg)](https://github.com/mayank/TriageForge/actions)
+[![CI](https://github.com/NotMayankfr/TriageForge/actions/workflows/ci.yml/badge.svg)](https://github.com/NotMayankfr/TriageForge/actions)
 ![Python](https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13-blue.svg)
 ![Docker](https://img.shields.io/badge/Docker-Compose%20v2-2496ED.svg)
 ![Terraform](https://img.shields.io/badge/Terraform-AWS%20Ready-7B42BC.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
+
+---
+
+## 🎬 Triage In Action
+
+![TriageForge Terminal Demo](docs/assets/demo_terminal.svg)
 
 ---
 
@@ -105,7 +111,7 @@ Zero cloud costs. Runs entirely inside Docker Compose in WSL2, Linux, or macOS.
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/mayank/TriageForge.git
+git clone https://github.com/NotMayankfr/TriageForge.git
 cd TriageForge
 
 # Install CLI in editable mode

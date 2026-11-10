@@ -9,6 +9,7 @@ description = "Deterministic cloud failure triage lab, automated diagnosis engin
 authors = [{ name = "Mayank", email = "dev@triageforge.local" }]
 readme = "README.md"
 requires-python = ">=3.10"
+urls = { Homepage = "https://github.com/NotMayankfr/TriageForge" }
 dependencies = [
     "click>=8.1.0",
     "rich>=13.7.0",
