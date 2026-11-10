@@ -16,7 +16,10 @@ import click
 from rich.console import Console
 from rich.table import Table
 
+from triageforge.analyzer.log_analyzer import LogAnalyzer
+from triageforge.analyzer.pcap_analyzer import PCAPAnalyzer
 from triageforge.aws_checks import check_ec2_cpu_alarm, check_route_table_igw, check_security_group
+from triageforge.dojo import DojoManager
 from triageforge.engine import DiagnosisEngine
 from triageforge.layers.dns_layer import DNSLayer
 from triageforge.layers.host_layer import HostLayer
@@ -203,6 +206,173 @@ def recover_command(fault_id: str):
     else:
         console.print(f"[bold red][FAIL] Failed to recover fault (exit code {ret}).[/bold red]")
         sys.exit(ret)
+
+
+# ------------------------------------------------------------------------------
+# Incident Training Drill Mode ("Dojo")
+# ------------------------------------------------------------------------------
+
+@main.group(name="dojo")
+def dojo_group():
+    """Interactive Incident Training Dojo for SREs and Cloud Support Engineers."""
+    pass
+
+
+@dojo_group.command(name="start")
+@click.option("--fault", "-f", "fault_id", default=None, help="Specific fault scenario ID to practice against (e.g. 02_gunicorn_down).")
+def dojo_start_command(fault_id: Optional[str]):
+    """Start an interactive incident drill. A fault is injected silently for you to diagnose."""
+    dojo = DojoManager()
+    try:
+        drill = dojo.start_drill(fault_id)
+        console.print()
+        from rich.panel import Panel
+        from rich.text import Text
+
+        ticket_text = Text()
+        ticket_text.append(f"INCIDENT ESCALATION: {drill['title']}\n", style="bold red")
+        ticket_text.append(f"Severity: {drill['severity']}  |  Status: ACTIVE INVESTIGATION\n\n", style="bold yellow")
+        ticket_text.append(f"Customer Escalation Report:\n", style="bold white")
+        ticket_text.append(f"\"{drill['customer_report']}\"\n\n", style="italic cyan")
+        ticket_text.append("Your Mission:\n", style="bold green")
+        ticket_text.append("  1. Run 'triageforge diagnose --url http://localhost:80' to inspect stack telemetry.\n")
+        ticket_text.append("  2. If stuck, request progressive hints: 'triageforge dojo hint'.\n")
+        ticket_text.append("  3. Submit your diagnosis: 'triageforge dojo submit <fault_id>'.\n")
+
+        console.print(Panel(ticket_text, title="[bold red]SRE Incident Training Drill[/bold red]", border_style="red"))
+        console.print()
+    except Exception as e:
+        console.print(f"[bold red]Error starting Dojo drill: {e}[/bold red]")
+        sys.exit(1)
+
+
+@dojo_group.command(name="hint")
+def dojo_hint_command():
+    """Request a progressive hint for the active incident drill."""
+    dojo = DojoManager()
+    try:
+        hint = dojo.get_hint()
+        console.print()
+        console.print(f"[bold yellow]Incident Investigation Hint:[/bold yellow]\n  {hint}")
+        console.print()
+    except Exception as e:
+        console.print(f"[bold red]{e}[/bold red]")
+
+
+@dojo_group.command(name="submit")
+@click.argument("fault_id")
+def dojo_submit_command(fault_id: str):
+    """Submit your root-cause diagnosis for the active drill."""
+    dojo = DojoManager()
+    try:
+        res = dojo.submit_diagnosis(fault_id)
+        console.print()
+        if res["success"]:
+            from rich.panel import Panel
+            summary = []
+            summary.append(f"[bold green]CORRECT ROOT CAUSE DIAGNOSED![/bold green]\n")
+            summary.append(f"Target Fault: [bold cyan]{res['fault_id']}[/bold cyan]")
+            summary.append(f"Time to Root Cause: [bold white]{res['elapsed_seconds']}s[/bold white]")
+            summary.append(f"Hints Consumed: [bold white]{res['hints_used']}[/bold white]")
+            summary.append(f"Performance Score: [bold green]{res['score']} / 100[/bold green]")
+            summary.append(f"Rank Awarded: [bold magenta]{res['rank']}[/bold magenta]\n")
+            summary.append(f"[dim]{res['remediation']}[/dim]")
+            console.print(Panel("\n".join(summary), title="[bold green]Incident Resolved[/bold green]", border_style="green"))
+        else:
+            console.print(f"[bold red]{res['message']}[/bold red]")
+            console.print(f"Attempts recorded: {res['attempts']}")
+        console.print()
+    except Exception as e:
+        console.print(f"[bold red]{e}[/bold red]")
+
+
+@dojo_group.command(name="stop")
+def dojo_stop_command():
+    """Cancel the active incident drill and automatically heal the stack."""
+    dojo = DojoManager()
+    active_id = dojo.stop_drill()
+    if active_id:
+        console.print(f"[bold cyan]Dojo drill ended. Injected fault '{active_id}' has been healed.[/bold cyan]")
+    else:
+        console.print("[dim]No active drill was in progress.[/dim]")
+
+
+# ------------------------------------------------------------------------------
+# PCAP & Log Analyzers
+# ------------------------------------------------------------------------------
+
+@main.command(name="pcap")
+@click.argument("pcap_file", type=click.Path(exists=True))
+def pcap_command(pcap_file: str):
+    """Analyze a raw packet capture (.pcap) file for TCP retransmissions, resets, and SYN drops."""
+    analyzer = PCAPAnalyzer()
+    try:
+        res = analyzer.analyze_file(pcap_file)
+        console.print()
+        from rich.table import Table
+        t = Table(title=f"PCAP Transport Telemetry: {Path(pcap_file).name}", border_style="dim")
+        t.add_column("Metric", style="bold white")
+        t.add_column("Value", style="cyan")
+
+        t.add_row("Total Captured Packets", str(res["total_packets"]))
+        t.add_row("TCP Packets", str(res["tcp_packets"]))
+        t.add_row("TCP SYN Packets", str(res["syn_count"]))
+        t.add_row("TCP SYN-ACK Packets", str(res["syn_ack_count"]))
+        t.add_row("TCP Resets (RST)", str(res["rst_count"]))
+        t.add_row("TCP Retransmissions", str(res["retransmission_count"]))
+        t.add_row("Zero-Window Stalls", str(res["zero_window_count"]))
+        if res["avg_handshake_rtt_ms"]:
+            t.add_row("Avg Handshake RTT", f"{res['avg_handshake_rtt_ms']:.1f}ms")
+
+        console.print(t)
+        console.print()
+        console.print("[bold yellow]Transport Layer Diagnostic Assessment:[/bold yellow]")
+        for f in res["findings"]:
+            console.print(f"  * {f}")
+        console.print()
+    except Exception as e:
+        console.print(f"[bold red]Failed to analyze PCAP: {e}[/bold red]")
+
+
+@main.command(name="logs")
+@click.option("--type", "-t", "log_type", type=click.Choice(["vpc-flow", "nginx"]), default="vpc-flow", help="Log format type.")
+@click.argument("log_file", type=click.Path(exists=True))
+def logs_command(log_type: str, log_file: str):
+    """Analyze VPC Flow Logs or web server access logs for rejected traffic or error spikes."""
+    analyzer = LogAnalyzer()
+    console.print()
+    if log_type == "vpc-flow":
+        res = analyzer.analyze_vpc_flow_logs(log_file)
+        from rich.table import Table
+        t = Table(title=f"AWS VPC Flow Log Analysis: {Path(log_file).name}", border_style="dim")
+        t.add_column("Metric", style="bold white")
+        t.add_column("Value", style="cyan")
+        t.add_row("Total Evaluated Flows", str(res["total_flows"]))
+        t.add_row("Accepted Traffic Flows", str(res["accepted_flows"]))
+        t.add_row("Rejected / Dropped Flows", str(res["rejected_flows"]))
+        t.add_row("Reject Rate", f"{res['reject_rate_pct']:.1f}%")
+        console.print(t)
+        console.print()
+        console.print("[bold yellow]Security Group / NACL Findings:[/bold yellow]")
+        for f in res["findings"]:
+            console.print(f"  * {f}")
+    else:
+        res = analyzer.analyze_nginx_logs(log_file)
+        from rich.table import Table
+        t = Table(title=f"Nginx Access Log Error Analysis: {Path(log_file).name}", border_style="dim")
+        t.add_column("Metric", style="bold white")
+        t.add_column("Value", style="cyan")
+        t.add_row("Total HTTP Requests", str(res["total_requests"]))
+        t.add_row("2xx Successes", str(res["2xx_success"]))
+        t.add_row("4xx Client Errors", str(res["4xx_client_errors"]))
+        t.add_row("5xx Server Errors", str(res["5xx_server_errors"]))
+        t.add_row("5xx Error Rate", f"{res['error_rate_5xx_pct']:.1f}%")
+        console.print(t)
+        console.print()
+        console.print("[bold yellow]Web Tier Findings:[/bold yellow]")
+        for f in res["findings"]:
+            console.print(f"  * {f}")
+    console.print()
 
 
 def _find_fault_dir(fault_id: str) -> Optional[Path]:

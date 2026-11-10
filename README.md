@@ -151,6 +151,38 @@ make fix FAULT=02_gunicorn_down
 triageforge diagnose --url http://localhost:80
 ```
 
+### Incident Training Drill Mode ("Dojo")
+Gamified real-time outage drills for onboarding and interview preparation:
+```bash
+# Start an incident drill (injects a realistic fault quietly with a customer ticket)
+triageforge dojo start
+
+# Request progressive L1 -> L2 -> L3 investigation hints
+triageforge dojo hint
+
+# Submit your diagnosed root-cause fault ID
+triageforge dojo submit 02_gunicorn_down
+
+# Automatically cancel drill and heal the stack
+triageforge dojo stop
+```
+
+### Low-Level Packet Capture (.pcap) Analyzer
+Inspects binary libpcap files for silent SYN drops, TCP resets, and retransmissions:
+```bash
+triageforge pcap docs/fixtures/sample_traffic.pcap
+```
+
+### AWS VPC Flow Log & Web Log Analyzer
+Surfaces security group drops and elevated 5xx server error distributions:
+```bash
+# Analyze VPC Flow Logs for rejected traffic flows
+triageforge logs --type vpc-flow docs/fixtures/sample_vpc_flow.log
+
+# Analyze Nginx access logs for 502/504 error spikes
+triageforge logs --type nginx docs/fixtures/sample_nginx_access.log
+```
+
 ### Export to Markdown (for Jira / ServiceNow Tickets)
 ```bash
 triageforge diagnose --url http://localhost:80 --format markdown -o incident_report.md

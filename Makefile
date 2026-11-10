@@ -53,6 +53,18 @@ diagnose:
 diagnose-tls:
 	triageforge diagnose --url https://localhost:443
 
+pcap:
+	triageforge pcap docs/fixtures/sample_traffic.pcap
+
+logs-vpc:
+	triageforge logs --type vpc-flow docs/fixtures/sample_vpc_flow.log
+
+logs-nginx:
+	triageforge logs --type nginx docs/fixtures/sample_nginx_access.log
+
+dojo:
+	triageforge dojo start
+
 list-faults:
 	triageforge list-faults
 
