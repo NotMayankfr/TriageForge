@@ -70,7 +70,7 @@ class HTTPLayer:
 
             # Send HTTP Request
             req_start = time.perf_counter()
-            conn.putrequest("GET", path)
+            conn.putrequest("GET", path, skip_host=True)
             conn.putheader("Host", host)
             conn.putheader("User-Agent", "TriageForge-Diagnostic-Probe/1.0")
             conn.putheader("Accept", "*/*")

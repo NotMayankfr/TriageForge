@@ -31,6 +31,10 @@ jobs:
 
       - name: Start TriageForge Local Docker Stack
         run: |
+          sudo systemctl disable --now apache2 2>/dev/null || true
+          sudo systemctl disable --now nginx 2>/dev/null || true
+          sudo systemctl disable --now postgresql 2>/dev/null || true
+          sudo killall -9 apache2 2>/dev/null || true
           docker compose -f stack/docker-compose.yml up -d --build
           echo "Waiting for stack to become healthy..."
           timeout 60 bash -c 'until curl -sf http://localhost:80/health; do sleep 2; done'

@@ -41,7 +41,7 @@ services:
     container_name: triageforge-db
     image: postgres:16-alpine
     ports:
-      - "5432:5432"
+      - "5433:5432"
     environment:
       - POSTGRES_DB=triageforge
       - POSTGRES_USER=forge_user

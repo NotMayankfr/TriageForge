@@ -174,7 +174,7 @@ class HostLayer:
                             metadata[f"container_{cname}_exit_code"] = exit_code
                             metadata[f"container_{cname}_oom_killed"] = oom_killed
 
-                            if oom_killed or exit_code == 137:
+                            if oom_killed:
                                 evidence.append(
                                     Evidence(
                                         layer="host",
@@ -195,6 +195,18 @@ class HostLayer:
                                         observed=f"{cname} exited with code {exit_code}",
                                         expected="Running (ExitCode 0)",
                                         message=f"Container '{cname}' unexpectedly exited with non-zero status {exit_code}.",
+                                        weight=1.8,
+                                    )
+                                )
+                            elif status == "exited":
+                                evidence.append(
+                                    Evidence(
+                                        layer="host",
+                                        metric="container_stopped",
+                                        status=CheckStatus.FAIL,
+                                        observed=f"{cname} is stopped (ExitCode {exit_code})",
+                                        expected="Running (ExitCode 0)",
+                                        message=f"Container '{cname}' is stopped / offline.",
                                         weight=1.8,
                                     )
                                 )

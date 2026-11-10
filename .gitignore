@@ -30,6 +30,8 @@ htmlcov/
 
 # Logs & Runtime
 *.log
+incident_report.json
+report.md
 stack/nginx/logs/*.log
 stack/app/logs/*.log
 

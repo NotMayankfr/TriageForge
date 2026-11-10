@@ -202,33 +202,32 @@ class DiagnosisEngine:
 
         status_code = http_res.metadata.get("status_code")
         server = http_res.metadata.get("server", "").lower()
+        app_status = host_res.metadata.get("container_triageforge-app_status") if host_res else None
 
-        # Nginx 502 Bad Gateway
-        if status_code == 502:
+        # Nginx 502 Bad Gateway or 504 Gateway Timeout or app container down
+        if status_code in (502, 504) or (status_code and status_code >= 500 and app_status and app_status != "running"):
             supporting = [
-                f"HTTP response returned 502 Bad Gateway (Server: {http_res.metadata.get('server')}).",
+                f"HTTP response returned {status_code} (Server: {http_res.metadata.get('server')}).",
                 "Reverse proxy (Nginx) is alive and accepting connections on port 80/443.",
                 "Proxy failed to establish upstream connection to Gunicorn/FastAPI worker socket or port 8000.",
             ]
-            if host_res:
-                app_status = host_res.metadata.get("container_triageforge-app_status")
-                if app_status and app_status != "running":
-                    supporting.append(f"Application container 'triageforge-app' status is '{app_status}'.")
+            if app_status and app_status != "running":
+                supporting.append(f"Application container 'triageforge-app' status is '{app_status}'.")
 
             return Hypothesis(
                 fault_type="02_gunicorn_down",
-                title="Upstream Application Process Down (Nginx 502 Bad Gateway)",
+                title="Upstream Application Process Down (Nginx 502/504 Bad Gateway)",
                 confidence=0.97,
                 severity="SEV-2",
                 category="Application",
                 root_cause=(
                     "The upstream WSGI/ASGI application (Gunicorn/FastAPI) has crashed, stopped, or is not listening "
-                    "on the target port/socket. Nginx received ECONNREFUSED from the upstream backend."
+                    "on the target port/socket. Nginx received ECONNREFUSED or timed out connecting to the upstream backend."
                 ),
                 supporting_evidence=supporting,
                 contradicting_evidence=[],
                 next_best_command=(
-                    "docker logs triageforge-nginx --tail 25 | grep -i 'connect() failed' "
+                    "docker logs triageforge-nginx --tail 25 | grep -i -E 'connect\\(\\) failed|upstream timed out' "
                     "&& docker ps -a --filter name=triageforge-app "
                     "&& docker logs triageforge-app --tail 40"
                 ),
