@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  nginx:
+    container_name: triageforge-nginx
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - app
+    networks:
+      - forge-net
+    restart: unless-stopped
+
+  app:
+    container_name: triageforge-app
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://forge_user:forge_password@db:5432/triageforge
+      - MOCK_S3_ENDPOINT=http://mock-s3:9000
+      - S3_BUCKET=triageforge-assets
+    deploy:
+      resources:
+        limits:
+          memory: 300M
+    depends_on:
+      - db
+      - mock-s3
+    networks:
+      - forge-net
+    restart: unless-stopped
+
+  db:
+    container_name: triageforge-db
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=triageforge
+      - POSTGRES_USER=forge_user
+      - POSTGRES_PASSWORD=forge_password
+    command: postgres -c max_connections=20
+    volumes:
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - forge-net
+    restart: unless-stopped
+
+  mock-s3:
+    container_name: triageforge-mock-s3
+    build:
+      context: ./mock_s3
+      dockerfile: Dockerfile
+    ports:
+      - "9000:9000"
+    networks:
+      - forge-net
+    restart: unless-stopped
+
+  sshd:
+    container_name: triageforge-sshd
+    build:
+      context: ./sshd
+      dockerfile: Dockerfile
+    ports:
+      - "2222:22"
+    networks:
+      - forge-net
+    restart: unless-stopped
+
+networks:
+  forge-net:
+    driver: bridge

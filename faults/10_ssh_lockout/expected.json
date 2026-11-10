@@ -1,0 +1,8 @@
+{
+  "fault_type": "10_ssh_lockout",
+  "category": "Security",
+  "symptom": "Permission denied (publickey) / SSH lockout",
+  "expected_top_fault": "10_ssh_lockout",
+  "expected_layer_failure": "host",
+  "min_confidence": 0.90
+}

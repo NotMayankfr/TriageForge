@@ -1,0 +1,8 @@
+{
+  "fault_type": "05_missing_route",
+  "category": "Network",
+  "symptom": "Instance can't reach the internet (EHOSTUNREACH / no route)",
+  "expected_top_fault": "05_missing_route",
+  "expected_layer_failure": "tcp",
+  "min_confidence": 0.85
+}

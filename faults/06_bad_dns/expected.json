@@ -1,0 +1,8 @@
+{
+  "fault_type": "06_bad_dns",
+  "category": "Network",
+  "symptom": "Name doesn't resolve (NXDOMAIN / SERVFAIL)",
+  "expected_top_fault": "06_bad_dns",
+  "expected_layer_failure": "dns",
+  "min_confidence": 0.90
+}

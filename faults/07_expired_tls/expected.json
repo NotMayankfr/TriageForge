@@ -1,0 +1,8 @@
+{
+  "fault_type": "07_expired_tls",
+  "category": "Security",
+  "symptom": "Expired or mismatched TLS cert (SSLCertVerificationError)",
+  "expected_top_fault": "07_expired_tls",
+  "expected_layer_failure": "tls",
+  "min_confidence": 0.90
+}

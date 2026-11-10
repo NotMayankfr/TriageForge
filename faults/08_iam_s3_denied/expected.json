@@ -1,0 +1,9 @@
+{
+  "fault_type": "08_iam_s3_denied",
+  "category": "Security",
+  "symptom": "IAM policy missing S3 access (HTTP 403 AccessDenied)",
+  "expected_top_fault": "08_iam_s3_denied",
+  "expected_layer_failure": "http",
+  "expected_status_code": 403,
+  "min_confidence": 0.90
+}

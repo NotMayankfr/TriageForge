@@ -1,0 +1,8 @@
+{
+  "fault_type": "09_oom_killed",
+  "category": "Compute",
+  "symptom": "Memory leak -> Linux kernel OOM kill (exit 137)",
+  "expected_top_fault": "09_oom_killed",
+  "expected_layer_failure": "host",
+  "min_confidence": 0.90
+}

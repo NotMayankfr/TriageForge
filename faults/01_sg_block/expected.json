@@ -1,0 +1,8 @@
+{
+  "fault_type": "01_sg_block",
+  "category": "Network",
+  "symptom": "curl hangs (TCP timeout, not refused)",
+  "expected_top_fault": "01_sg_block",
+  "expected_layer_failure": "tcp",
+  "min_confidence": 0.85
+}

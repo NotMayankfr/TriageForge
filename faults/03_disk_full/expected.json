@@ -1,0 +1,8 @@
+{
+  "fault_type": "03_disk_full",
+  "category": "Storage",
+  "symptom": "HTTP 500 / 'No space left on device'",
+  "expected_top_fault": "03_disk_full",
+  "expected_layer_failure": "host",
+  "min_confidence": 0.85
+}

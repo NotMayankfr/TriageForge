@@ -1,0 +1,8 @@
+{
+  "fault_type": "04_pg_connections",
+  "category": "Database",
+  "symptom": "Postgres connections exhausted ('too many clients already')",
+  "expected_top_fault": "04_pg_connections",
+  "expected_layer_failure": "host",
+  "min_confidence": 0.90
+}

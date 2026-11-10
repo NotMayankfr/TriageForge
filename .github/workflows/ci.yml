@@ -1,0 +1,72 @@
+name: TriageForge CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test-and-triage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+
+      - name: Run unit test suite
+        run: |
+          pytest tests -v
+
+      - name: Start TriageForge Local Docker Stack
+        run: |
+          docker compose -f stack/docker-compose.yml up -d --build
+          echo "Waiting for stack to become healthy..."
+          timeout 60 bash -c 'until curl -sf http://localhost:80/health; do sleep 2; done'
+
+      - name: Verify Baseline Healthy Triage
+        run: |
+          triageforge diagnose --url http://localhost:80 --format terminal
+
+      - name: Test Fault Injection: 02_gunicorn_down
+        run: |
+          chmod +x faults/*/*.sh
+          echo "Injecting fault 02_gunicorn_down..."
+          bash faults/02_gunicorn_down/break.sh
+          
+          echo "Running TriageForge diagnosis..."
+          # diagnose exits with 2 when an incident is active
+          triageforge diagnose --url http://localhost:80 --format json -o incident_report.json || true
+          
+          # Assert top hypothesis is 02_gunicorn_down
+          python -c "
+          import json
+          data = json.load(open('incident_report.json'))
+          top = data.get('top_hypothesis', {}).get('fault_type')
+          print('Diagnosed top fault:', top)
+          assert top == '02_gunicorn_down', f'Expected 02_gunicorn_down, got {top}'
+          "
+
+      - name: Test Fault Recovery: 02_gunicorn_down
+        run: |
+          echo "Recovering fault..."
+          bash faults/02_gunicorn_down/fix.sh
+          
+          echo "Verifying recovered health..."
+          triageforge diagnose --url http://localhost:80 --format terminal
+
+      - name: Tear down stack
+        if: always()
+        run: |
+          docker compose -f stack/docker-compose.yml down -v

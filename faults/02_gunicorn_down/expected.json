@@ -1,0 +1,9 @@
+{
+  "fault_type": "02_gunicorn_down",
+  "category": "Application",
+  "symptom": "Nginx responds with HTTP 502 Bad Gateway",
+  "expected_top_fault": "02_gunicorn_down",
+  "expected_layer_failure": "http",
+  "expected_status_code": 502,
+  "min_confidence": 0.90
+}
